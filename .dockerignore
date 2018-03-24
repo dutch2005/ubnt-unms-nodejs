@@ -1,0 +1,10 @@
+.vscode
+~
+cert
+node_modules
+spec
+**/*.spec.js
+.gitignore
+Readme.md
+swagger.yaml
+gulpfile.js

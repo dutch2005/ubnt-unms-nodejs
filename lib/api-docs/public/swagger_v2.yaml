@@ -1,0 +1,5661 @@
+swagger: '2.0'
+info:
+  title: "UNMS API"
+  description: "You can authorize calls with x-auth-token by clicking the button on the right, to not have to fill in
+  authorization token for each request. Entered value in authorization token for a request,
+  will be replaced by the one entered in authorization. To get this token use /user/login request."
+  version: ""
+basePath: /v2.1
+tags:
+  - name: user
+    description: User authorization and settings
+  - name: users
+    description: Edit users and invites
+  - name: nms
+    description: UNMS settings including as SMTP, SSL and backups
+  - name: sites
+    description: Manage sites and their pictures
+  - name: devices
+    description: All device related operations
+  - name: tasks
+    description: View or cancel task(s)
+  - name: logs
+    description: View logs
+  - name: outages
+    description: View outages
+  - name: discovery
+    description: Scan for devices and connect them to UNMS
+  - name: firmwares
+    description: Manage firmwares
+securityDefinitions:
+  UserSecurity:
+    type: apiKey
+    in: header
+    name: x-auth-token
+    description: User authorization token
+security:
+  - UserSecurity: []
+produces:
+  - application/json
+paths:
+
+  /user:
+    get:
+      tags:
+        - user
+      summary: Get the authenticated user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Authenticated user
+          schema:
+            $ref: '#/definitions/User'
+        406:
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - user
+      summary: Updates authenticated user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              email:
+                type: string
+              currentPassword:
+                type: string
+              newPassword:
+                type: string
+                description: nullable string
+      responses:
+        200:
+          description: Updated authenticated user
+          schema:
+            $ref: '#/definitions/User'
+        406:
+          description: Invalid current password provided
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/login:
+    post:
+      tags:
+        - user
+      summary: Login
+      security: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Login'
+      responses:
+        200:
+          description: User
+          headers:
+            x-auth-token:
+              type: string
+              description: User authorization token
+          schema:
+            $ref: '#/definitions/User'
+        201:
+          description: TwoFactorToken
+          schema:
+            $ref: '#/definitions/TwoFactorToken'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/login/totpauth:
+    post:
+      tags:
+        - user
+      summary: Two Factor Authentication login step 2
+      security: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+                description: token id from successfull login
+              verificationCode:
+                type: string
+                description: 6 digit code from Authenticator
+              sessionTimeout:
+                type: number
+              password:
+                type: string
+      responses:
+        200:
+          description: User
+          headers:
+            x-auth-token:
+              type: string
+              description: User authorization token
+          schema:
+            $ref: '#/definitions/User'
+        401:
+          description: Bad verification code
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Two Factor Token not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/totpauth:
+    get:
+      tags:
+        - user
+      summary: Gets new information for two factor authentication
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: New two factor secret
+          schema:
+            $ref: '#/definitions/TwoFactorSecret'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - user
+      summary: Sets two factor authentication for user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              password:
+                type: string
+              verificationCode:
+                type: string
+                description: 6 digit code from Authenticator
+              totpAuthEnabled:
+                type: boolean
+              totpAuthSecret:
+                type: string
+      responses:
+        200:
+          description: Updated authenticated user
+          schema:
+            $ref: '#/definitions/User'
+        403:
+          description: Bad username or password / Bad verification code
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/logout:
+    post:
+      tags:
+        - user
+      summary: Logout
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Result of logout action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/profile:
+    get:
+      tags:
+        - user
+      summary: Get the authenticated user profile
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Authenticated user profile
+          schema:
+            $ref: '#/definitions/UserProfile'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - user
+      summary: Updates authenticated user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/UserProfile'
+      responses:
+        200:
+          description: Updated authenticated user profile
+          schema:
+            $ref: '#/definitions/UserProfile'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/password/requestreset:
+    post:
+      tags:
+        - user
+      summary: Login
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+      responses:
+        201:
+          description: Result of request reset password action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/password/reset:
+    post:
+      tags:
+        - user
+      summary: Login
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+              password:
+                type: string
+                description: new password
+      responses:
+        200:
+          description: Result of reset password action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /users:
+    get:
+      tags:
+        - users
+      summary: Return list of users
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: List of users
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - users
+      summary: Creates new user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              username:
+                type: string
+              password:
+                type: string
+      responses:
+        201:
+          description: Newly created user
+          schema:
+            $ref: '#/definitions/User'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /users/{id}:
+    delete:
+      tags:
+        - users
+      summary: Delete user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - users
+      summary: Updates user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/User'
+      responses:
+        200:
+          description: Updated user
+          schema:
+            $ref: '#/definitions/User'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /users/{id}/reinvite:
+    post:
+      tags:
+        - users
+      summary: Reinvites user by email
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of reinvite action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /nms/enums:
+    get:
+      tags:
+        - nms
+      summary: Return current codebooks
+      responses:
+        200:
+          description: Configuration status
+          schema:
+            $ref: '#/definitions/Enums'
+  /nms/connection:
+    get:
+      tags:
+        - nms
+      summary: Return connect string for unms instance
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Connection string
+          schema:
+            type: string
+  /nms/setup:
+    get:
+      tags:
+        - nms
+      summary: Return status of UNMS configuration
+      responses:
+        200:
+          description: Configuration status
+          schema:
+            type: object
+            properties:
+              isConfigured:
+                type: boolean
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - nms
+      summary: Set up the UNMS instance
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              hostname:
+                type: string
+              useLetsEncrypt:
+                type: boolean
+              user:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  password:
+                    type: string
+              smtp:
+                $ref: "#/definitions/MailServer"
+      responses:
+        201:
+          description: Result of setup action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/server-config:
+    get:
+      tags:
+        - nms
+      summary: Return UNMS server configuration
+      responses:
+        200:
+          description: Server configuration
+          schema:
+            type: object
+            properties:
+              isCloudSmtpAvailable:
+                type: boolean
+              canConfigureMaps:
+                type: boolean
+              latestVersionUrl:
+                type: string
+              updateVersionOverride:
+                type: string
+              useCustomSslCert:
+                type: boolean
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/settings:
+    get:
+      tags:
+        - nms
+      summary: Get nms settings
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Nms settings
+          schema:
+            $ref: '#/definitions/NmsSettings'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - nms
+      summary: Updated nms settings
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/NmsSettings'
+      responses:
+        200:
+          description: Nms settings
+          schema:
+            $ref: '#/definitions/NmsSettings'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/update:
+    get:
+      tags:
+        - nms
+      summary: Get nms update status
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Nms update status
+          schema:
+            $ref: '#/definitions/NmsUpdateStatus'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - nms
+      summary: Request NMS update
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              version:
+                type: string
+      responses:
+        200:
+          description: Result of request
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/refresh-certificate:
+    put:
+      tags:
+        - nms
+      summary: Refresh NMS certificate.
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Result of request
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/maintenance/backup:
+    get:
+      tags:
+        - nms
+      summary: Download data backup
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: retention
+          in: query
+          type: number
+          required: true
+          enum:
+            - 7
+            - 30
+            - 60
+            - 90
+            - 180
+            - 365
+            - -1
+      responses:
+        200:
+          description: Backup file
+          schema:
+            type: file
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - nms
+      summary: Upload data backup
+      consumes:
+        - multipart/form-data  # and/or application/x-www-form-urlencoded
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: file
+          in: formData
+          description: The uploaded backup file
+          required: true
+          type: file
+      responses:
+        200:
+          description: Result of upload action
+          schema:
+            $ref: '#/definitions/Status'
+        401:
+          description: Unknown format of backup file
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/maintenance/backup/restore:
+    get:
+      tags:
+        - nms
+      summary: Restores uploaded backup file
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Result of restore action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/maintenance/supportinfo:
+    get:
+      tags:
+        - nms
+      summary: Download support info
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Support info file
+          schema:
+            type: file
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/mailserver:
+    get:
+      tags:
+        - nms
+      summary: Fetch mail server settings
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Mailserver settings
+          schema:
+            $ref: '#/definitions/MailServer'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - nms
+      summary: Update mail server settings
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/MailServer'
+      responses:
+        200:
+          description: Updated mail server settings
+          schema:
+            $ref: '#/definitions/MailServer'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/mailserver/test:
+    post:
+      tags:
+        - nms
+      summary: test mail server settings by sending email
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              to:
+                type: string
+                description: email address where testing email should be sent
+              smtp:
+                $ref: '#/definitions/MailServer'
+      responses:
+        200:
+          description: Result of test action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/summary:
+    get:
+      tags:
+        - nms
+      summary: Various badge-count like values, e.g. unread logs count
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: outagesTimestamp
+          in: query
+          required: true
+          type: string
+        - name: logsTimestamp
+          in: query
+          required: true
+          type: string
+        - name: logsLevel
+          in: query
+          type: array
+          required: true
+          collectionFormat: multi
+          items:
+            type: string
+            enum:
+            - error
+            - warning
+            - info
+      responses:
+        200:
+          description: Various counts
+          schema:
+            $ref: '#/definitions/NmsSummary'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /nms/statistics:
+    get:
+      tags:
+        - nms
+      summary: Get UNMS network statistics.
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: interval
+          in: query
+          type: string
+          enum:
+          - hour
+          - day
+          - month
+          required: true
+      responses:
+        200:
+          description: Get UNMS network statistics.
+          schema:
+              $ref: '#/definitions/NMSStatistics'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /sites:
+    get:
+      tags:
+        - sites
+      summary: List of all sites in network
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: query
+          type: string
+          required: false
+      responses:
+        200:
+          description: An array of sites
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/SiteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - sites
+      summary: Create new site
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              address:
+                type: string
+              contactName:
+                type: string
+                description: nullable string
+              contactPhone:
+                type: string
+                description: nullable string
+              contactEmail:
+                type: string
+                description: nullable string
+              note:
+                type: string
+                description: nullable string
+              parentSiteId:
+                type: string
+                description: nullable string
+              location:
+                type: object
+                description: nullable string
+                schema:
+                  properties:
+                    latitude:
+                      type: string
+                      description: nullable string
+                    longiture:
+                      type: string
+                      description: nullable string
+      responses:
+        201:
+          description: Result of update image
+          schema:
+            $ref: '#/definitions/SiteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /sites/{id}:
+    get:
+      tags:
+        - sites
+      summary: Return a site's detail
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Site's detail
+          schema:
+            $ref: '#/definitions/SiteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - sites
+      summary: Update site
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: payload
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/SiteOverview'
+      responses:
+        200:
+          description: Result of update site
+          schema:
+            $ref: '#/definitions/SiteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - sites
+      summary: Delete site. Unauthorize all connected devices
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /sites/{id}/images:
+    get:
+      tags:
+        - sites
+      summary: Return all site images sorted by image order
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Site detail
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ImageOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - sites
+      summary: Upload new image and create image thumbnail
+      consumes:
+        - multipart/form-data  # and/or application/x-www-form-urlencoded
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: file
+          in: formData
+          description: The uploaded image. Can be multiple images
+          required: true
+          type: file
+      responses:
+        201:
+          description: Result of image upload
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /sites/{siteId}/images/{imageId}:
+    get:
+      tags:
+        - sites
+      summary: Return image file
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: siteId
+          in: path
+          type: string
+          required: true
+        - name: imageId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Image file
+          schema:
+            type: file
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    patch:
+      tags:
+        - sites
+      summary: Update image
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: siteId
+          in: path
+          type: string
+          required: true
+        - name: imageId
+          in: path
+          type: string
+          required: true
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: not nullable
+              description:
+                type: string
+                description: not nullable
+      responses:
+        200:
+          description: Result of update action
+          schema:
+            $ref: '#/definitions/ImageOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - sites
+      summary: Delete image
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: imageId
+          in: path
+          type: string
+          required: true
+        - name: siteId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /sites/{siteId}/images/{imageId}/reorder:
+    post:
+      tags:
+        - sites
+      summary: Change image order
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: siteId
+          in: path
+          type: string
+          required: true
+        - name: imageId
+          in: path
+          type: string
+          required: true
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              currentOrder:
+                type: number
+                description: Current order value
+              nextOrder:
+                type: number
+                description: New order value
+      responses:
+        200:
+          description: Result of reordering
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /sites/{siteId}/images/{imageId}/rotateleft:
+    post:
+      tags:
+        - sites
+      summary: Rotate the image 90 degrees to left
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: siteId
+          in: path
+          type: string
+          required: true
+        - name: imageId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of rotation action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /sites/{siteId}/images/{imageId}/rotateright:
+    post:
+      tags:
+        - sites
+      summary: Rotate the image 90 degrees to right
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: siteId
+          in: path
+          type: string
+          required: true
+        - name: imageId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of rotation action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices:
+    get:
+      tags:
+        - devices
+      summary: List of all devices in network
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: siteId
+          in: query
+          required: false
+          type: string
+        - name: parentId
+          in: query
+          required: false
+          type: string
+      responses:
+        200:
+          description: An array of devices
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/DeviceStatusOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}:
+    get:
+      tags:
+        - devices
+      summary: Device status overview
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Device status overview
+          schema:
+            $ref: '#/definitions/DeviceStatusOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      summary: Delete device
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}/authorize:
+    post:
+      tags:
+        - devices
+      summary: Authorize device
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              siteId:
+                type: string
+      responses:
+        200:
+          description: Result of authorize action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}/refresh:
+    post:
+      tags:
+        - devices
+      summary: Refresh device communication, remove macAesKey
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of refresh action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}/restart:
+    post:
+      tags:
+        - devices
+      summary: Restart device, device action reboot
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of restart action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}/reset:
+    post:
+      tags:
+        - devices
+      summary: Reset device statistics, action clear-traffic-analysis
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of reset action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}/locate:
+    post:
+      tags:
+        - devices
+      summary: Start device locating
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of locate action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}/unlocate:
+    post:
+      tags:
+        - devices
+      summary: Stop device locating
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of unlocate action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}/statistics:
+    get:
+      tags:
+        - devices
+      summary: Return device statistics
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: interval
+          in: query
+          type: string
+          enum:
+          - hour
+          - day
+          - month
+          required: true
+      responses:
+        200:
+          description: Device statistics
+          schema:
+              $ref: '#/definitions/DeviceStatistics'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/backups:
+    post:
+      tags:
+        - devices
+      summary: Create and download a new multi device backup
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              deviceIds:
+                type: array
+                items:
+                  type: string
+      responses:
+        200:
+          description: Backup file
+          schema:
+            type: file
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{id}/backups:
+    get:
+      tags:
+        - devices
+      summary: Return list of device backups
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Device backups
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/DeviceBackup'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - devices
+      summary: Create new device backup
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Newly created backup
+          schema:
+            $ref: '#/definitions/DeviceBackup'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Upload data backup
+      consumes:
+        - multipart/form-data  # and/or application/x-www-form-urlencoded
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: file
+          in: formData
+          description: The uploaded backup file or files
+          required: true
+          type: file
+      responses:
+        200:
+          description: List of newly uploaded backups
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/DeviceBackup'
+        401:
+          description: Unknown format of backup file
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/backups/{backupId}:
+    get:
+      tags:
+        - devices
+      summary: Return device configuration backup file
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: backupId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Backup file
+          schema:
+            type: file
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      summary: Delete backup
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: backupId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/backups/{backupId}/apply:
+    post:
+      tags:
+        - devices
+      summary: Update device configuration from backup file
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: backupId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of apply action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/system:
+    get:
+      tags:
+        - devices
+      summary: Device system configuration
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Device system configuration
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/System'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Update device system configuration
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/System'
+      responses:
+        200:
+          description: Updated device system configuration
+          schema:
+            $ref: '#/definitions/System'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/system/unms:
+    get:
+      tags:
+        - devices
+      summary: Device specific UNMS settings
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Device specific UNMS settings
+          schema:
+            $ref: '#/definitions/UnmsSettings'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Update device specific unms settings
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/UnmsSettings'
+      responses:
+        200:
+          description: Updated device specific unms settings
+          schema:
+            $ref: '#/definitions/UnmsSettings'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/services:
+    get:
+      tags:
+        - devices
+      summary: Device services
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Device services
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Services'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Update device services
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Services'
+      responses:
+        200:
+          description: Updated device services
+          schema:
+            $ref: '#/definitions/Services'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/interfaces:
+    get:
+      tags:
+        - devices
+      summary: Return list of device interfaces
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Device interfaces
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/InterfaceOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/interfaces/vlan:
+    post:
+      tags:
+        - devices
+      summary: Create new vlan interface
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              description:
+                type: string
+                description: nullable string
+              interface:
+                type: string
+              addresses:
+                type: array
+                items:
+                  $ref: '#/definitions/InterfaceAddressOverview'
+              mtu:
+                $ref: '#/definitions/MTU'
+              vlanId:
+                type: number
+      responses:
+        200:
+          description: Newly created vlan interface
+          schema:
+            $ref: '#/definitions/InterfaceConfig'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/interfaces/pppoe:
+    post:
+      tags:
+        - devices
+      summary: Create new pppoe interface
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              id:
+                $ref: '#/definitions/PPPOEID'
+              mtu:
+                $ref: '#/definitions/MTU'
+              interface:
+                $ref: '#/definitions/InterfaceIdentification'
+              password:
+                type: string
+              account:
+                type: string
+                description: nullable string
+      responses:
+        200:
+          description: Newly created vlan interface
+          schema:
+            $ref: '#/definitions/InterfaceConfig'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/interfaces/{interfaceName}:
+    get:
+      tags:
+        - devices
+      summary: Get interface configuration
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: interfaceName
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: interface configuration
+          schema:
+            $ref: '#/definitions/InterfaceConfig'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Update interface configuration
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: interfaceName
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/InterfaceConfig'
+      responses:
+        200:
+          description: Updated interface config
+          schema:
+            $ref: '#/definitions/InterfaceConfig'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      summary: Delete interface
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: deviceId
+          in: path
+          type: string
+          required: true
+        - name: interfaceName
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/interfaces/{interfaceName}/block:
+    post:
+      tags:
+        - devices
+      summary: Block interface
+      parameters:
+      - name: x-auth-token
+        in: header
+        required: true
+        type: string
+      - name: deviceId
+        in: path
+        type: string
+        required: true
+      - name: interfaceName
+        in: path
+        type: string
+        required: true
+      responses:
+        200:
+          description: Result of block action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/interfaces/{interfaceName}/unblock:
+    post:
+      tags:
+        - devices
+      summary: Unblock interface
+      parameters:
+      - name: x-auth-token
+        in: header
+        required: true
+        type: string
+      - name: deviceId
+        in: path
+        type: string
+        required: true
+      - name: interfaceName
+        in: path
+        type: string
+        required: true
+      responses:
+        200:
+          description: Result of unblock action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/{deviceId}/interfaces/{interfaceName}/resetstats:
+    post:
+      tags:
+        - devices
+      summary: Reset interface statistics
+      parameters:
+      - name: x-auth-token
+        in: header
+        required: true
+        type: string
+      - name: deviceId
+        in: path
+        type: string
+        required: true
+      - name: interfaceName
+        in: path
+        type: string
+        required: true
+      responses:
+        200:
+          description: Result of stats reset action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/{deviceId}/interfaces/{interfaceName}/ospf:
+    put:
+      tags:
+        - devices
+      summary: Set interface OSPF config
+      parameters:
+      - name: x-auth-token
+        in: header
+        required: true
+        type: string
+      - name: deviceId
+        in: path
+        type: string
+        required: true
+      - name: interfaceName
+        in: path
+        type: string
+        required: true
+      - name: body
+        in: body
+        schema:
+          $ref: '#/definitions/OSPFInterface'
+
+      responses:
+        200:
+          description: Interface update status
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      summary: Unset interface OSPF config
+      parameters:
+      - name: x-auth-token
+        in: header
+        required: true
+        type: string
+      - name: deviceId
+        in: path
+        type: string
+        required: true
+      - name: interfaceName
+        in: path
+        type: string
+        required: true
+
+      responses:
+        200:
+          description: Interface update status
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/onus:
+    get:
+      tags:
+        - devices
+      summary: List of all onus in network
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: siteId
+          in: query
+          required: false
+          type: string
+        - name: parentId
+          in: query
+          required: false
+          type: string
+      responses:
+        200:
+          description: An array of ONU devices
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ONUStatusOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/onus/{id}:
+    get:
+      tags:
+        - devices
+      summary: Return ONU detail
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: ONU detail
+          schema:
+            $ref: '#/definitions/ONUStatusOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      summary: Delete ONU device - call OLT action DELETE_ONU (former forget action)
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/onus/{id}/upgrade:
+    post:
+      tags:
+        - devices
+      summary: Upgrade device
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of upgrade action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/onus/{id}/block:
+    post:
+      tags:
+       - devices
+      summary: Delete ONU GPON password and set status to blocked
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of block action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/onus/{id}/unblock:
+    post:
+      tags:
+        - devices
+      summary: Unblock ONU device - device action UNBLOCK_ONU
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of unblock action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/onus/{id}/resetstats:
+    post:
+      tags:
+        - devices
+      summary: Reset onu data statistics
+      parameters:
+      - name: x-auth-token
+        in: header
+        required: true
+        type: string
+      - name: id
+        in: path
+        type: string
+        required: true
+      responses:
+        200:
+          description: Result of stats reset action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/erouters/{id}:
+    get:
+      tags:
+        - devices
+      summary: Return erouter detail
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Erouter detail
+          schema:
+            $ref: '#/definitions/ErouterStatusDetail'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/erouters/{id}/router/routes:
+    get:
+      tags:
+        - devices
+      summary: All routes
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Device routes
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/RouteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - devices
+      summary: Create new static route
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/StaticRoute'
+      responses:
+        200:
+          description: Created static route
+          schema:
+            $ref: '#/definitions/RouteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Edit static route
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/StaticRoute'
+      responses:
+        200:
+          description: Updated static route
+          schema:
+            $ref: '#/definitions/RouteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/router/routes/delete:
+    post:
+      tags:
+        - devices
+      summary: Delete route
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/StaticRoute'
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/router/routes/block:
+    post:
+      tags:
+        - devices
+      summary: Edit static route
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/StaticRoute'
+      responses:
+        200:
+          description: Updated static route
+          schema:
+            $ref: '#/definitions/RouteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/router/routes/unblock:
+    post:
+      tags:
+        - devices
+      summary: Edit static route
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/StaticRoute'
+      responses:
+        200:
+          description: Updated static route
+          schema:
+            $ref: '#/definitions/RouteOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/router/ospf:
+    get:
+      tags:
+        - devices
+      summary: Get OSPF configuration
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          # TODO
+      responses:
+        200:
+          description: OSPF configuration
+          schema:
+            $ref: '#/definitions/OSPFConfig'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Update OSPF configuration
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/OSPFConfig'
+      responses:
+        200:
+          description: Updated OSPF configuration
+          schema:
+            $ref: '#/definitions/OSPFConfig'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/router/ospf/areas:
+    get:
+      tags:
+        - devices
+      summary: All OSPF areas
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: OSPF areas
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/OSPFArea'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - devices
+      summary: Create new OSPF area
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/OSPFArea'
+      responses:
+        200:
+          description: Created OSPF area
+          schema:
+            $ref: '#/definitions/OSPFArea'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/router/ospf/areas/{area}:
+    delete:
+      tags:
+        - devices
+      summary: Delete OSPF area
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: area
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Update OSPF area
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: area
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/OSPFArea'
+      responses:
+        200:
+          description: Updated OSPF area
+          schema:
+            $ref: '#/definitions/OSPFArea'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/erouters/{id}/dhcp/servers:
+    get:
+      tags:
+        - devices
+      summary: Device DHCP servers
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Device DHCP
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/DHCPServerConfiguration'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - devices
+      summary: Create new DHCP server
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/DHCPServerConfiguration'
+      responses:
+        200:
+          description: Created device DHCP server
+          schema:
+            $ref: '#/definitions/DHCPServerConfiguration'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/dhcp/servers/{serverName}:
+    get:
+      tags:
+        - devices
+      summary: Get DHCP server configuration
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: serverName
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: DHCP server configuration
+          schema:
+            $ref: '#/definitions/DHCPServerConfiguration'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags:
+        - devices
+      summary: Update DHCP server configuration
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: serverName
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/DHCPServerConfiguration'
+      responses:
+        200:
+          description: Updated DHCP server config
+          schema:
+            $ref: '#/definitions/DHCPServerConfiguration'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      summary: Delete DHCP server
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: serverName
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/dhcp/servers/{serverName}/block:
+    post:
+      tags:
+        - devices
+      summary: Block DHCP server
+      parameters:
+      - name: x-auth-token
+        in: header
+        required: true
+        type: string
+      - name: id
+        in: path
+        type: string
+        required: true
+      - name: serverName
+        in: path
+        type: string
+        required: true
+      responses:
+        200:
+          description: Result of block action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/dhcp/servers/{serverName}/unblock:
+    post:
+      tags:
+        - devices
+      summary: Unblock dhcp server
+      parameters:
+      - name: x-auth-token
+        in: header
+        required: true
+        type: string
+      - name: id
+        in: path
+        type: string
+        required: true
+      - name: serverName
+        in: path
+        type: string
+        required: true
+      responses:
+        200:
+          description: Result of unblock action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/erouters/{id}/dhcp/leases:
+    get:
+      tags:
+        - devices
+      summary: DHCP IP address leases
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: DHCP IP address leases
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/DHCPLease'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - devices
+      summary: Create DHCP IP address lease
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+              address:
+                type: string
+                description: ip address
+              mac:
+                type: string
+              serverName:
+                type: string
+      responses:
+        200:
+          description: Created DHCP IP address lease
+          schema:
+            $ref: '#/definitions/DHCPLease'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/erouters/{id}/dhcp/leases/{serverName}/{leaseId}:
+    put:
+      tags:
+        - devices
+      summary: Update DHCP IP lease
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: serverName
+          in: path
+          type: string
+          required: true
+        - name: leaseId
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/DHCPLease'
+      responses:
+        200:
+          description: Updated DHCP IP lease
+          schema:
+            $ref: '#/definitions/DHCPLease'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      summary: Delete DHCP IP lease
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: serverName
+          in: path
+          type: string
+          required: true
+        - name: leaseId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/olts:
+    get:
+      tags:
+        - devices
+      summary: List of all olts in network
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: siteId
+          in: query
+          required: false
+          type: string
+      responses:
+        200:
+          description: An array of devices
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/DeviceStatusOverview'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/olts/{id}:
+    get:
+      tags:
+        - devices
+      summary: Return OLT detail
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: OLT detail
+          schema:
+            $ref: '#/definitions/OLTStatusDetail'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - devices
+      summary: Delete OLT form UNMS
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of delete action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /devices/airmaxes/{id}:
+    get:
+      tags:
+        - devices
+      summary: Return AirMax detail
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: AirMax detail
+          schema:
+            $ref: '#/definitions/AirMaxStatusDetail'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/aircubes/{id}:
+    get:
+      tags:
+        - devices
+      summary: Return AirCube detail
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: AirCube detail
+          schema:
+            $ref: '#/definitions/AirCubeStatusDetail'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /devices/macs/:
+    get:
+      tags:
+        - devices
+      summary: Return a list of all devices' MAC address (except for ONUs)
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: List of MAC addresses
+          schema:
+            type: array
+            items:
+              type: string
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /tasks/{id}:
+    delete:
+      tags:
+        - tasks
+      summary: Cancel a task
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Result of cancellation action
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    get:
+      tags:
+        - tasks
+      summary: Returns a mass upgrade task inner task items
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: count
+          in: query
+          required: true
+          type: number
+        - name: page
+          in: query
+          required: true
+          type: number
+      responses:
+        200:
+          description: An array of tasks
+          schema:
+            type: object
+            properties:
+              pagination:
+                type: object
+                properties:
+                  count:
+                    type: number
+                    description: number of tasks returned
+                  total:
+                    type: number
+                    description: total number of tasks
+                  page:
+                    type: number
+                    description: the page of results returned
+                  pages:
+                    type: number
+                    description: total number of pages available
+              aggregation:
+                type: object
+                properties:
+                  allCount:
+                    type: number
+                  inProgressCount:
+                    type: number
+                  successCount:
+                    type: number
+                  failedCount:
+                    type: number
+                  canceledCount:
+                    type: number
+              items:
+                type: array
+                items:
+                  $ref: '#/definitions/Task'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /tasks:
+    get:
+      tags:
+        - tasks
+      summary: List all tasks
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: count
+          in: query
+          required: true
+          type: number
+        - name: page
+          in: query
+          required: true
+          type: number
+        - name: status
+          in: query
+          type: string
+          required: false
+        - name: period
+          in: query
+          type: number
+          required: false
+          description: unix timestamp in milliseconds
+      responses:
+        200:
+          description: An array of tasks
+          schema:
+            type: object
+            properties:
+              pagination:
+                type: object
+                properties:
+                  count:
+                    type: number
+                    description: number of tasks returned
+                  total:
+                    type: number
+                    description: total number of tasks
+                  page:
+                    type: number
+                    description: the page of results returned
+                  pages:
+                    type: number
+                    description: total number of pages available
+              aggregation:
+                type: object
+                properties:
+                  allCount:
+                    type: number
+                  inProgressCount:
+                    type: number
+                  successCount:
+                    type: number
+                  failedCount:
+                    type: number
+                  canceledCount:
+                    type: number
+              items:
+                type: array
+                items:
+                  $ref: '#/definitions/Task'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /tasks/in-progress:
+    get:
+      tags:
+        - tasks
+      summary: Return number of tasks in progress
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Number of tasks in progress
+          schema:
+            type: object
+            properties:
+              count:
+                type: number
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /logs:
+    get:
+      tags:
+        - logs
+      summary: List of all log items (former alerts/events)
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: count
+          in: query
+          required: true
+          type: number
+        - name: page
+          in: query
+          required: true
+          type: number
+        - name: siteId
+          in: query
+          type: string
+          required: false
+        - name: deviceId
+          in: query
+          type: string
+          required: false
+        - name: level
+          in: query
+          type: string
+          enum:
+          - info
+          - warning
+          - error
+          required: false
+        - name: period
+          in: query
+          type: number
+          required: false
+          description: unix timestamp in milliseconds
+        - name: query
+          in: query
+          type: string
+          required: false
+          description: search pattern
+      responses:
+        200:
+          description: An array of Log items
+          schema:
+            type: object
+            properties:
+              pagination:
+                type: object
+                properties:
+                  count:
+                    type: number
+                    description: number of logs returned
+                  total:
+                    type: number
+                    description: total number of logs
+                  page:
+                    type: number
+                    description: the page of results returned
+                  pages:
+                    type: number
+                    description: total number of pages available
+              aggregation:
+                type: object
+                properties:
+                  allCount:
+                    type: number
+                  infoCount:
+                    type: number
+                  warningCount:
+                    type: number
+                  errorCount:
+                    type: number
+              items:
+                type: array
+                items:
+                  $ref: '#/definitions/LogItem'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /logs/unread:
+    get:
+      tags:
+        - logs
+      summary: Number of unread logItems for logged-in user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: timestamp
+          in: query
+          type: number
+          description: unix timestamp in ms
+          required: true
+        - name: level
+          in: query
+          type: string
+          enum:
+            - error
+            - warning
+            - info
+      responses:
+        200:
+          description: Number of unread logItems
+          schema:
+            type: object
+            properties:
+              count:
+                type: number
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /outages:
+    get:
+      tags:
+        - outages
+      summary: List of all network outages for last month
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: count
+          in: query
+          required: true
+          type: number
+        - name: page
+          in: query
+          required: true
+          type: number
+        - name: siteId
+          in: query
+          type: string
+          required: false
+        - name: deviceId
+          in: query
+          type: string
+          required: false
+        - name: type
+          in: query
+          type: string
+          enum:
+          - outage
+          - quality
+          required: false
+        - name: period
+          in: query
+          type: number
+          required: false
+          description: unix timestamp in milliseconds
+        - name: query
+          in: query
+          type: string
+          required: false
+          description: search pattern
+      responses:
+        200:
+          description: An array of network outages
+          schema:
+            type: object
+            properties:
+              pagination:
+                type: object
+                properties:
+                  count:
+                    type: number
+                    description: number of outages returned
+                  total:
+                    type: number
+                    description: total number of outages
+                  page:
+                    type: number
+                    description: the page of results returned
+                  pages:
+                    type: number
+                    description: total number of pages available
+              aggregation:
+                type: object
+                properties:
+                  allCount:
+                    type: number
+                  outageCount:
+                    type: number
+                  qualityCount:
+                    type: number
+              items:
+                type: array
+                items:
+                  $ref: '#/definitions/OutageItem'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /outages/unread:
+    get:
+      tags:
+        - outages
+      summary: Number of unread outageItems for logged-in user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: timestamp
+          in: query
+          type: number
+          description: unix timestamp in ms
+          required: true
+      responses:
+        200:
+          description: Number of unread outageItems
+          schema:
+            type: object
+            properties:
+              count:
+                type: number
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /discovery:
+    get:
+      tags:
+        - discovery
+      summary: Fetch result of the last scan
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: If any result exists
+          schema:
+            $ref: '#/definitions/DiscoveryResult'
+        404:
+          description: No result exists
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - discovery
+      summary: Delete and/or terminate the discovery process
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Result of deletion
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /discovery/start:
+    post:
+      tags:
+        - discovery
+      summary: Start new discovery run and terminate any ongoing for current user
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              range:
+                type: object
+                description: Ip range text and parsed value
+                properties:
+                  input:
+                    type: string
+                    description: Textual representation of the range
+                  parsed:
+                    type: array
+                    items:
+                      type: object
+                    description: Parsed ranges
+      responses:
+        200:
+          description: Newly created result
+          schema:
+            $ref: '#/definitions/DiscoveryResult'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /discovery/stop:
+    post:
+      tags:
+        - discovery
+      summary: Cancel ongoing discovery task, discovery result is not deleted
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: Canceled discovery result
+          schema:
+            $ref: '#/definitions/DiscoveryResult'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /discovery/credentials:
+    post:
+      tags:
+        - discovery
+      summary: Batch operation - set new credentials of given devices
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              devices:
+                description: Array of device IDs to set credentials
+                type: array
+                items:
+                  type: string
+              credentials:
+                $ref: '#/definitions/SshCredentials'
+      responses:
+        200:
+          description: Result of operation
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /discovery/connect:
+    post:
+      tags:
+        - discovery
+      summary: Batch operation - connects given devices to UNMS
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              devices:
+                description: Array of device IDs to set credentials
+                type: array
+                items:
+                  type: string
+      responses:
+        200:
+          description: Result of operation
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /firmwares:
+    get:
+      tags:
+        - firmwares
+      summary: Fetch fetch available firmwares
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+      responses:
+        200:
+          description: If any result exists
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Firmware'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - firmwares
+      summary: Upload new firmware image
+      consumes:
+        - multipart/form-data  # and/or application/x-www-form-urlencoded
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: file
+          in: formData
+          description: The uploaded firmware. Can be multiple files
+          required: true
+          type: file
+      responses:
+        200:
+          description: New firmware metadata
+          schema:
+            $ref: '#/definitions/Firmware'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /firmwares/delete:
+    post:
+      tags:
+        - firmwares
+      summary: Batch firmware delete
+      parameters:
+        - name: x-auth-token
+          description: User authorization token
+          in: header
+          required: true
+          type: string
+        - name: payload
+          in: body
+          required: true
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                origin:
+                  type: string
+                filename:
+                  type: string
+      responses:
+        200:
+          description: Deleted firmwares
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Firmware'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+definitions:
+  DeviceStatusOverview:
+    type: object
+    description: Read-only overview for device list
+    properties:
+      identification:
+        $ref: '#/definitions/DeviceIdentification'
+      overview:
+        $ref: '#/definitions/DeviceOverview'
+      firmware:
+        $ref: '#/definitions/DeviceFirmware'
+      attributes:
+        type: object
+        description: nullable field with variable properties depending on device type
+      parentId:
+        type: string
+        description: nullable string
+  ONUStatusOverview:
+    type: object
+    description: Read-only ONU detail
+    properties:
+      identification:
+        $ref: '#/definitions/DeviceIdentification'
+      overview:
+        $ref: '#/definitions/DeviceOverview'
+      firmware:
+        $ref: '#/definitions/DeviceFirmware'
+      parentId:
+        type: string
+        description: nullable string
+      canDisplayStatistics:
+        type: boolean
+        description: Logical switch which determines if it makes sense to display device statistics to user
+      olt:
+        type: object
+        properties:
+          id:
+            type: string
+          port:
+            type: number
+            description: olt pon port
+  OLTStatusDetail:
+    type: object
+    description: Read-only OLT detail
+    properties:
+      identification:
+        $ref: '#/definitions/DeviceIdentification'
+      overview:
+        $ref: '#/definitions/DeviceOverview'
+      firmware:
+        $ref: '#/definitions/DeviceFirmware'
+      upgrade:
+        $ref: '#/definitions/DeviceUpgradeStatus'
+  ErouterStatusDetail:
+    type: object
+    description: Read-only erouter detail
+    properties:
+      identification:
+        $ref: '#/definitions/DeviceIdentification'
+      overview:
+        $ref: '#/definitions/DeviceOverview'
+      firmware:
+        $ref: '#/definitions/DeviceFirmware'
+      upgrade:
+        $ref: '#/definitions/DeviceUpgradeStatus'
+      gateway:
+        type: string
+  AirMaxStatusDetail:
+    type: object
+    description: Read-only AirMax detail
+    properties:
+      identification:
+        $ref: '#/definitions/DeviceIdentification'
+      overview:
+        $ref: '#/definitions/DeviceOverview'
+      firmware:
+        $ref: '#/definitions/DeviceFirmware'
+      upgrade:
+        $ref: '#/definitions/DeviceUpgradeStatus'
+  AirCubeStatusDetail:
+    type: object
+    description: Read-only AirMax detail
+    properties:
+      identification:
+        $ref: '#/definitions/DeviceIdentification'
+      overview:
+        $ref: '#/definitions/DeviceOverview'
+      firmware:
+        $ref: '#/definitions/DeviceFirmware'
+      upgrade:
+        $ref: '#/definitions/DeviceUpgradeStatus'
+  InterfaceOverview:
+    type: object
+    description: Read-only interface overview
+    properties:
+      identification:
+        $ref: '#/definitions/InterfaceIdentification'
+      addresses:
+        type: array
+        items:
+          $ref: '#/definitions/InterfaceAddressOverview'
+      status:
+        type: object
+        enum:
+        - $ref: '#/definitions/InterfaceStatus'
+        - null
+      statistics:
+        $ref: '#/definitions/InterfaceStatistics'
+      pppoe:
+        type: object
+        properties:
+          id:
+            $ref: '#/definitions/PPPOEID'
+      vlan:
+        type: object
+        properties:
+          id:
+            type: number
+      poe:
+        $ref: '#/definitions/POE'
+      enabled:
+        type: boolean
+        description: Enable/Disable
+      visible:
+        type: boolean
+        description: Logical switch which determines if it makes sense to display the interface to user
+      canDisplayStatistics:
+        type: boolean
+        description: Logical switch which determines if it makes sense to display interface statistics to user
+  InterfaceConfig:
+    type: object
+    description: Read-write interface configuration
+    properties:
+      identification:
+        $ref: '#/definitions/InterfaceIdentification'
+      enabled:
+        type: boolean
+        description: Enable/Disable
+      status:
+        type: object
+        enum:
+        - $ref: '#/definitions/InterfaceStatus'
+        - null
+      addresses:
+        type: array
+        items:
+          $ref: '#/definitions/InterfaceAddressOverview'
+      speed:
+        type: string
+        enum:
+        - auto
+        - 100full
+        - 100half
+        - 10full
+        - 10half
+        - 1000
+        - 10G
+      mtu:
+        $ref: '#/definitions/MTU'
+      proxyARP:
+        type: boolean
+      poe:
+        $ref: '#/definitions/POE'
+      switch:
+        type: object
+        properties:
+          vlanEnabled:
+            type: boolean
+          vlanCapable:
+            type: boolean
+            description: device is capable of VLAN on switch port
+          ports:
+            type: array
+            items:
+              type: object
+              properties:
+                interface:
+                  $ref: '#/definitions/InterfaceIdentification'
+                enabled:
+                  type: boolean
+                pvid:
+                  type: number
+                  description: Value range is 1 - 4087. Pvid (port vlan id), when a packet comes to eth0 from outside network with no "vlan tag", it will be tagged with pvid and treated as a packet with vlan tag.
+                vid:
+                  type: array
+                  items:
+                    type: number
+                    description: Value range is 1 - 4087. Vid (vlan id) means the vlan group that the eth port (ex. eth0) belongs to. It will only accept packets with same vlan tag. If the coming packet has different vlan tag from any of vid settings in eth0, it will be dropped.
+      vlan:
+        type: object
+        properties:
+          id:
+            type: number
+            description: value 0 - 4094
+          interface:
+            $ref: '#/definitions/InterfaceIdentification'
+      pppoe:
+        type: object
+        properties:
+          id:
+            $ref: '#/definitions/PPPOEID'
+          interface:
+            $ref: '#/definitions/InterfaceIdentification'
+          password:
+            type: string
+          account:
+            type: string
+      pon:
+        type: object
+        properties:
+          authentication:
+            $ref:  '#/definitions/PonAuthentication'
+      bridge:
+        type: object
+        description: nullable field
+        properties:
+          priority:
+            type: number
+          forwardingDelay:
+            type: number
+          helloTime:
+            type: number
+          maxAge:
+            type: number
+          stp:
+            type: boolean
+          ports:
+            type: object
+            properties:
+              enabled:
+                type: boolean
+              interface:
+                $ref: '#/definitions/InterfaceIdentification'
+  PonAuthentication:
+    type: object
+    properties:
+      authorizationType:
+        type: string
+        description: No auth, Pre-shared secret
+        enum:
+        - no-auth
+        - pre-shared-secret
+      preSharedSecret:
+        type: string
+  DHCPServerConfiguration:
+    type: object
+    properties:
+      name:
+        type: string
+      interface:
+        type: string
+        description: network cidr (192.168.100.0/24)
+      rangeStart:
+        type: string
+        description: ip address
+      rangeEnd:
+        type: string
+        description: ip address
+      router:
+        type: string
+        description: ip address
+      dns1:
+        type: string
+        description: ip address
+      dns2:
+        type: string
+        description: ip address
+      leaseTime:
+        type: number
+        description: ms
+      unifiController:
+        type: string
+        description: IPv4 address
+      domain:
+        type: string
+  DHCPLease:
+    type: object
+    properties:
+      leaseId:
+        type: string
+        description: unique per dhcp server
+      type:
+        type: string
+        enum:
+          - dynamic
+          - static
+      address:
+        type: string
+        description: ip address
+      mac:
+        type: string
+      expiration:
+        type: string
+        description: expiration date in ISO format (UNMS-420); nullable string
+      hostname:
+        type: string
+        description: nullable string
+      serverName:
+        type: string
+  Services:
+    type: object
+    properties:
+      ntpClient:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          ntpServer1:
+            type: string
+            description: nullable string
+          ntpServer2:
+            type: string
+            description: nullable string
+      sshServer:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          sshPort:
+            type: number
+            description: nullable number
+      systemLog:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          server:
+            type: string
+            description: nullable string
+          level:
+            type: string
+            enum:
+            - emerg
+            - alert
+            - crit
+            - err
+            - warning
+            - notice
+            - info
+            - debug
+      telnetServer:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          port:
+            type: number
+            description: nullable number
+      snmpAgent:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          community:
+            type: string
+            description: nullable string
+          contact:
+            type: string
+            description: nullable string
+          location:
+            type: string
+            description: nullable string
+      webServer:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          httpPort:
+            type: number
+            description: nullable number
+          httpsPort:
+            type: number
+            description: nullable number
+      discovery:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+  System:
+    type: object
+    properties:
+      name:
+        type: string
+      timezone:
+        type: string
+      admin:
+        type: object
+        properties:
+          login:
+            $ref: '#/definitions/Login'
+      domainName:
+        type: string
+        description: nullable string
+      gateway:
+        type: string
+        description: nullable string
+      dns1:
+        type: string
+        description: nullable string
+      dns2:
+        type: string
+        description: nullable string
+      readOnlyAccount:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          login:
+            $ref: '#/definitions/Login'
+  MTU:
+    type: number
+    description: Maximum transmission unit <68, 2018>
+  POE:
+    type: object
+    properties:
+      output:
+        type: string
+        description: Power over Ethernet
+        enum:
+        - off
+        - 24v
+        - 48v
+        - 24v-4pair
+        - 54v-4pair
+        - pthru
+      capacities:
+        type: array
+        items:
+          type: string
+          enum:
+          - off
+          - 24v
+          - 48v
+          - 24v-4pair
+          - 54v-4pair
+          - pthru
+  PPPOEID:
+    type: number
+    description: value 0 - 4094
+  Enums:
+    type: object
+    description: enumerations (codebooks)
+    properties:
+      InterfaceIdentificationTypeEnum:
+        type: object
+        properties:
+          Bridge:
+            type: string
+            enum:
+            - bridge
+          Switch:
+            type: string
+            enum:
+            - switch
+          Pon:
+            type: string
+            enum:
+            - pon
+          Ethernet:
+            type: string
+            enum:
+            - ethernet
+      PonAuthorizationTypeEnum:
+        type: object
+        properties:
+          NoAuth:
+            type: string
+            enum:
+            - noauth
+          PSK:
+            type: string
+            enum:
+            - key
+      IpAddressTypeEnum:
+        type: object
+        properties:
+          Disabled:
+            type: string
+            description: always contains null
+            enum:
+            - null
+          Dhcp:
+            type: string
+            enum:
+            - dhcp
+          Static:
+            type: string
+            enum:
+            - static
+      MailServerTypeEnum:
+        type: object
+        properties:
+          NoSmtp:
+            type: string
+            enum:
+            - nosmtp
+          Cloud:
+            type: string
+            enum:
+            - cloud
+          Gmail:
+            type: string
+            enum:
+            - gmail
+          Smtp:
+            type: string
+            enum:
+            - smtp
+      ServiceEnum:
+        type: object
+        properties:
+          SshServer:
+            type: string
+            enum:
+              - sshServer
+          NtpClient:
+            type: string
+            enum:
+              - ntpClient
+          WebServer:
+            type: string
+            enum:
+              - ntpClient
+          Discovery:
+            type: string
+            enum:
+              - discovery
+      ServiceLabelEnum:
+        type: object
+        properties:
+          sshServer:
+            type: string
+          ntpClient:
+            type: string
+          webServer:
+            type: string
+          discovery:
+            type: string
+      StatusEnum:
+        type: object
+        properties:
+          All:
+            type: string
+            description: always contains null
+            enum:
+            - null
+          Active:
+            type: string
+            enum:
+            - active
+          Disabled:
+            type: string
+            enum:
+            - disabled
+          Disconnected:
+            type: string
+            enum:
+            - disconnected
+          Unauthorized:
+            type: string
+            enum:
+            - unauthorized
+      StatusLabelEnum:
+        type: object
+        properties:
+          null:
+            type: string
+            description: null as an object key
+          active:
+            type: string
+          disabled:
+            type: string
+          disconnected:
+            type: string
+          unauthorized:
+            type: string
+      SiteTypeEnum:
+        type: object
+        properties:
+          Site:
+            type: string
+            enum:
+            - site
+          Endpoint:
+            type: string
+            enum:
+            - endpoint
+      AlertTypeEnum:
+        type: object
+        properties:
+          None:
+            type: string
+            enum:
+            - none
+          System:
+            type: string
+            enum:
+            - system
+          Custom:
+            type: string
+            enum:
+            - user
+  InterfaceIdentification:
+    type: object
+    description: read-only interface identification
+    properties:
+      position:
+        type: number
+        description: physical port position
+      type:
+        type: string
+        enum:
+          - ethernet
+          - pon
+          - switch
+          - bridge
+      name:
+        type: string
+        description: interface name
+      displayName:
+        type: string
+        description: computed display name from name and description
+      description:
+        type: string
+        description: nullable string
+      mac:
+        type: string
+  InterfaceAddressType:
+    type: string
+    description: nullable string
+    enum:
+      - dhcp
+      - dhcpv6
+      - static
+  InterfaceStatus:
+    type: object
+    description: Interface detail status
+    properties:
+      status:
+        description: State of Interface
+        type: string
+        enum:
+          - Active
+          - Disconnected
+          - Disabled
+      description:
+        type: string
+        description: "100 Mbps - Full Duplex"
+      plugged:
+        type: boolean
+        description: connected/disconnected
+      speed:
+        type: number
+        description: float
+      duplex:
+        type: boolean
+      autoneg:
+        type: boolean
+      sfp:
+        type: object
+        description: nullable object
+        properties:
+          present:
+            type: boolean
+          vendor:
+            type: string
+            description: nullable string
+          part:
+            type: string
+            description: nullable string
+          maxSpeed:
+            type: number
+          olt:
+            type: boolean
+  InterfaceAddressOverview:
+    type: object
+    properties:
+      type:
+        $ref: '#/definitions/InterfaceAddressType'
+      cidr:
+        type: string
+        description: nullable string
+  DeviceIdentification:
+    type: object
+    description: read-only olt/onu identification attributes
+    properties:
+      id:
+        type: string
+        description: technical ID only for NMS
+      timestamp:
+        type: number
+      firmwareVersion:
+        type: string
+      model:
+        type: string
+        description: values like SFU etc.
+      name:
+        type: string
+        description: autogenerated
+      mac:
+        type: string
+        description: available only for clients (ONU)
+      serialNumber:
+        type: string
+        description: available only for clients (ONU)
+      type:
+        type: string
+        enum:
+          - onu
+          - olt
+          - erouter
+          - eswitch
+      category:
+        type: string
+        enum:
+          - optical
+          - wired
+          - wireless
+      site:
+        type: object
+        enum:
+          - $ref: '#/definitions/SiteIdentification'
+          - null
+      authorized:
+        type: boolean
+        description: device is added to nms
+  DeviceOverview:
+    type: object
+    description: Read-only basic device/client overview attributes
+    properties:
+      status:
+        type: string
+        description: Read-only value generated by NMS - it is not part of GET_STATUS response
+        enum:
+          - disabled
+          - active
+          - unauthorized
+          - disconnected
+          - unknown
+      uptime:
+        type: number
+        description: Uptime in seconds
+      lastSeen:
+        type: number
+        description: Last seen timestamp
+      cpu:
+        type: number
+        description: Current cpu load
+      ram:
+        type: number
+        description: Current memory usage
+      signal:
+        type: number
+        description: Nullable prop; current signal level (only for airmax devices), for example 55 dBm
+      locating:
+        type: boolean
+        description: True if device is in location mode
+      canUpgrade:
+        type: boolean
+        description: True if device can be upgraded
+      voltage:
+        type: number
+        description: System input voltage in V
+      temps:
+        type: array
+        items:
+          type: object
+          properties:
+            value:
+              description: Temperature in celsius
+              type: number
+            type:
+              enum:
+                - CPU
+                - BOARD
+            name:
+              description: Temperature senzor name -  Board 1, Board 2, Board 3, Board (PHY), cpu, CPU, PHY, Board (CPU) etc.
+              type: string
+      distance:
+        type: number
+        description: nullable property; in meters
+      transmitPower:
+        type: number
+        description: nullable property; in dBm
+      receivePower:
+        type: number
+        description: nullable property; in dBm
+      biasCurrent:
+        type: number
+        description: nullable property in milli Ampers
+      rxRate:
+        type: number
+        description: nullable property; in bps
+      rxBytes:
+        type: number
+        description: nullable property; in Bytes
+      txRate:
+        type: number
+        description: nullable property; in bps
+      txBytes:
+        type: number
+        description: nullable property; in Bytes
+      txDropped:
+        type: number
+        description: nullable property
+      txErrors:
+        type: number
+        description: nullable property
+      rxDropped:
+        type: number
+        description: nullable property
+      rxErrors:
+        type: number
+        description: nullable property
+  NMSStatistics:
+    description: UNMS statistics for UNMS dashboard
+    type: object
+    properties:
+      period:
+        description: Number of milliseconds between data points
+        type: number
+      interval:
+        description: Start and end of the interval
+        type: object
+        properties:
+          start:
+            type: number
+            description: Start time as milliseconds elapsed between 1 January 1970 00:00:00 UTC and the given time
+          end:
+            type: number
+            description: End time as milliseconds elapsed between 1 January 1970 00:00:00 UTC and the given time
+      networkHealth:
+        description: Network health in percentage. Ratio of online/disconnected sites and clients.
+        $ref: '#/definitions/GraphDataSet'
+      allSites:
+        $ref: '#/definitions/GraphDataSet'
+      liveSites:
+        $ref: '#/definitions/GraphDataSet'
+      allClients:
+        $ref: '#/definitions/GraphDataSet'
+      liveClients:
+        $ref: '#/definitions/GraphDataSet'
+  DeviceStatistics:
+    description: Device statistics + statistics for all interfaces
+    type: object
+    properties:
+      period:
+        description: Number of milliseconds between data points
+        type: number
+      interval:
+        description: Start and end of the interval
+        type: object
+        properties:
+          start:
+            type: number
+            description: Start time as milliseconds elapsed between 1 January 1970 00:00:00 UTC and the given time
+          end:
+            type: number
+            description: End time as milliseconds elapsed between 1 January 1970 00:00:00 UTC and the given time
+      ram:
+        $ref: '#/definitions/GraphDataSet'
+      cpu:
+        $ref: '#/definitions/GraphDataSet'
+      ping:
+        $ref: '#/definitions/GraphDataSet'
+      errors:
+        $ref: '#/definitions/GraphDataSet'
+      interfaces:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            receive:
+              $ref: '#/definitions/GraphDataSet'
+            transmit:
+              $ref: '#/definitions/GraphDataSet'
+  InterfaceStatistics:
+    type: object
+    properties:
+      timestamp:
+        type: string
+      rxrate:
+        type: number
+      rxbytes:
+        type: number
+      txrate:
+        type: number
+      txbytes:
+        type: number
+      dropped:
+        type: number
+      errors:
+        type: number
+  GraphDataSet:
+    type: array
+    description: Generic graph data set
+    items:
+      type: object
+      properties:
+        x:
+          type: number
+          description: Milliseconds elapsed between 1 January 1970 00:00:00 UTC and the given date
+        y:
+          type: number
+  LogItem:
+    type: object
+    properties:
+      id:
+        type: string
+      timestamp:
+        type: number
+        description: unix timestamp in milliseconds
+      message:
+        type: string
+      level:
+        type: string
+        enum:
+          - info
+          - warning
+          - error
+      tags:
+        type: array
+        items:
+          type: string
+          enum:
+            - site
+            - device
+            - endpoint
+            - network
+      device:
+        type: object
+        enum:
+          - $ref: '#/definitions/DeviceIdentification'
+          - null
+      site:
+        type: object
+        enum:
+          - $ref: '#/definitions/SiteIdentification'
+          - null
+  OutageItem:
+    type: object
+    properties:
+      startTimestamp:
+        type: string
+      endTimestamp:
+        type: string
+      deviceIdentification:
+        $ref: '#/definitions/DeviceIdentification'
+      type:
+        type: string
+        enum:
+          - quality
+          - outage
+  ImageOverview:
+    type: object
+    properties:
+      identification:
+        $ref: '#/definitions/ImageIdentification'
+      name:
+        type: string
+      description:
+        type: string
+      fileName:
+        type: string
+      fileType:
+        type: string
+      height:
+        type: number
+      width:
+        type: number
+      size:
+        description: in KB
+        type: number
+      date:
+        type: string
+      thumbUrl:
+        type: string
+      fullUrl:
+        type: string
+      order:
+        description: image order in sites gallery
+        type: number
+  ImageIdentification:
+    type: object
+    properties:
+      id:
+        type: string
+  SiteIdentification:
+    type: object
+    properties:
+      id:
+        type: string
+      status:
+        type: string
+        enum:
+          - active
+          - disconnected
+      name:
+        type: string
+      type:
+        type: string
+        enum:
+          - site
+          - endpoint
+      parent:
+        type: object
+        enum:
+          - null
+          - $ref: '#/definitions/SiteIdentification'
+  SiteOverview:
+    description: Gallery is created with site. There is only one gallery per site. Site devices is possible to load with /devices resource.
+    type: object
+    properties:
+      identification:
+        $ref: '#/definitions/SiteIdentification'
+      description:
+        $ref: '#/definitions/SiteDescription'
+      notifications:
+        type: object
+        properties:
+          type:
+            type: string
+            enum:
+              - none
+              - system
+              - custom
+          users:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+  SiteDescription:
+    type: object
+    properties:
+      note:
+        type: string
+      address:
+        type: string
+      location:
+        type: object
+        description: nullable object
+        properties:
+          longitude:
+            type: string
+          latitude:
+            type: string
+      elevation:
+        type: number
+        description: Elevation on the surface of the earth
+      height:
+        type: number
+        description: Height of the structure
+      contact:
+        type: object
+        properties:
+          name:
+            type: string
+            description: nullable string
+          phone:
+            type: string
+            description: nullable string
+          email:
+            type: string
+            description: nullable string
+      endpoints:
+        type: array
+        description: Endpoints are sites without endpoints
+        items:
+          $ref: '#/definitions/SiteIdentification'
+  Login:
+    type: object
+    properties:
+      password:
+        type: string
+        format: password
+      username:
+        type: string
+      sessionTimeout:
+        type: number
+        example: 3600000
+        description: Token specific lifetime in miliseconds max to one week. Almost all api calls (user explicit actions, without technicall refresh calls) refresh token validity.
+  User:
+    type: object
+    properties:
+      id:
+        type: string
+      username:
+        type: string
+      email:
+        type: string
+      alerts:
+        type: boolean
+      totpAuthEnabled:
+        type: boolean
+  UserProfile:
+    type: object
+    properties:
+      presentationMode:
+        type: boolean
+      lastLogItemId:
+        type: string
+      userId:
+        type: string
+      forceChangePassword:
+        type: boolean
+      tableConfig:
+        type: object
+  NmsSettings:
+    type: object
+    properties:
+      hostname:
+        type: string
+      useLetsEncrypt:
+        type: boolean
+      letsEncryptError:
+        type: string
+      letsEncryptTimestamp:
+        type: number
+      autoBackups:
+        type: boolean
+      maps:
+        type: object
+          provider:
+            type: string
+            enum:
+              - GoogleMaps
+              - OpenStreetMap
+          mapsApiKey:
+            type: string
+            description: nullable string
+      devicePingAddress:
+        type: string
+      devicePingIntervalNormal:
+        type: number
+      devicePingIntervalOutage:
+        type: number
+  NmsUpdateStatus:
+    type: object
+    properties:
+      canNmsUpdate:
+        type: boolean
+      nmsUpdateStatus:
+        type: string
+        enum:
+          - ready
+          - requested
+          - started
+          - updating
+  MailServer:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - nosmtp
+          - cloud
+          - gmail
+          - smtp
+      gmailUsername:
+        type: string
+      gmailPassword:
+        type: string
+      customSmtpHostname:
+        type: string
+      customSmtpPort:
+        type: number
+      customSmtpSslEnabled:
+        type: boolean
+      customSmtpAuthEnabled:
+        type: boolean
+      customSmtpUsername:
+        type: string
+      customSmtpPassword:
+        type: string
+      customSmtpSender:
+        type: string
+  DeviceBackup:
+    type: object
+    properties:
+      id:
+        type: string
+      timestamp:
+        type: string
+  RouteOverview:
+    type: object
+    properties:
+      type:
+        type: string
+        description: K - kernel route, C - connected, S - static, R - RIP, O - OSPF, I - ISIS, B - BGP
+        enum:
+          - KernelRoute
+          - Connected
+          - Static
+          - RIP
+          - OSPF
+          - ISIS
+          - BGP
+      enabled:
+        type: boolean
+        description: nullable; bool only for static routes
+      destination:
+        description: cidr
+        type: string
+      gateway:
+        description: ip address
+        type: string
+      gatewayStatus:
+         type: string
+         enum:
+           - reachable
+           - unreachable
+      interface:
+        description: interface name, for example eth0, eth1 etc.
+        type: string
+      distance:
+        type: number
+      fib:
+        description: true if route type includes *, for example S>*
+        type: boolean
+      selected:
+        description: true if route type includes >, for example S>*
+        type: boolean
+      description:
+        type: string
+  StaticRoute:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - interface
+          - blackhole
+          - gateway
+      destination:
+        description: cidr
+        type: string
+      gateway:
+        description: ip address / nullable string
+        type: string
+      interface:
+        description: interface name, for example eth0, eth1 etc. / nullable string
+        type: string
+      distance:
+        description: 1 - 255
+        type: number
+      description:
+        type: string
+        description: nullable string
+  OSPFAuthorization:
+    type: string
+    description: off - Off, md5 - MD5/sec, plaintext-password - Plain text
+    enum:
+      - off
+      - md5
+      - plaintext-password
+  OSPFConfig:
+    type: object
+    properties:
+      router:
+        description: Override the default router ID (IPv4 address)
+        type: string
+      redistributeConnected:
+        type: object
+        required: true
+        properties:
+          enabled:
+            type: boolean
+            description: Is enabled
+            required: true
+          metric:
+            type: number
+            description: Optional number between 1 and 16
+      redistributeStatic:
+        type: object
+        required: true
+        properties:
+          enabled:
+            type: boolean
+            description: Is enabled
+            required: true
+          metric:
+            type: number
+            description: Optional number between 1 and 16
+      redistributeDefaultRoute:
+        type: object
+        required: true
+        properties:
+          enabled:
+            type: boolean
+            description: Is enabled
+            required: true
+  OSPFArea:
+    type: object
+    properties:
+      id:
+        description: OSPF area in decimal or dotted decimal notation (0.0.0.0)
+        type: string
+      type:
+        type: string
+        enum:
+          - normal
+          - nssa
+          - stub
+      auth:
+         $ref: '#/definitions/OSPFAuthorization'
+      networks:
+        type: array
+        items:
+          description: IPv4 network with prefix (192.0.2.0/24)
+          type: string
+  OSPFInterface:
+    type: object
+    properties:
+      auth:
+        $ref: '#/definitions/OSPFAuthorization'
+      authKey:
+        type: string
+      cost:
+        description: 1 - 65535
+        type: number
+  DiscoveryResult:
+    type: object
+    properties:
+      identification:
+        $ref: '#/definitions/DiscoveryResultIdentification'
+      devices:
+        type: array
+        items:
+          $ref: '#/definitions/DiscoveryDevice'
+      userId:
+        description: User UUID
+        type: string
+      status:
+        description: State of scanning
+        type: string
+        enum:
+          - InProgress
+          - Success
+          - Failed
+          - Canceled
+      error:
+        description: Error message
+        type: string
+  DiscoveryResultIdentification:
+    type: object
+    properties:
+      id:
+        description: UUID of the result
+        type: string
+      method:
+        type: string
+        description: Scan method - ip range or import
+      ipRange:
+        description: Ip range input - nullable string
+        type: string
+  DiscoveryDevice:
+    type: object
+    properties:
+      identification:
+        $ref: '#/definitions/DiscoveryDeviceIdentification'
+      ip:
+        description: IP address of the device
+        type: string
+      firmware:
+        description: Firmware version overview
+        type: object
+        properties:
+          current:
+            description: Current FW version
+            type: string
+          latest:
+            description: Latest available FW version
+            type: string
+          compatible:
+            description: True if version >= minimumVersion
+            type: boolean
+      connect:
+        type: object
+        properties:
+          status:
+            description: Status of the discovery process for given device
+            type: string
+            enum:
+              - Connected
+              - Ready
+              - Pending
+              - Unconnected
+          progress:
+            description: Connection progress
+            type: string
+            enum:
+              - Failed
+              - UpgradingFirmware
+              - SettingConnectionString
+              - Waiting
+          error:
+            description: Error that happened during connection attempt
+            type: string
+      flags:
+        description: If status is Unconnected these flags indicate the problem
+        type: object
+        properties:
+          canAuthenticate:
+            type: boolean
+          canConnect:
+            type: boolean
+          unsupportedDevice:
+            type: boolean
+          missingCredentials:
+            type: boolean
+          unsupportedFirmware:
+            type: boolean
+          error:
+            type: boolean
+      authentication:
+        type: object
+        properties:
+          status:
+            description: State of the authentication
+            type: string
+            enum:
+              - InProgress
+              - Success
+              - Failed
+              - Canceled
+          error:
+            description: Error message if available - nullable string
+            type: string
+  DiscoveryDeviceIdentification:
+    type: object
+    properties:
+      id:
+        type: string
+        description: UUID
+      firmwareVersion:
+        type: string
+      model:
+        type: string
+        description: value from models enum
+      name:
+        type: string
+        description: autogenerated
+      mac:
+        type: string
+        description: device mac address
+      type:
+        type: string
+        description: value from type enum
+      category:
+        type: string
+        description: value from category enum
+      siteId:
+        type: string
+      authorized:
+        type: boolean
+        description: device is added to nms
+  SshCredentials:
+    type: object
+    properties:
+      username:
+        type: string
+      password:
+        type: string
+      port:
+        description: nullable, default 22, in range 1 - 65535
+        type: number
+  DeviceFirmware:
+    type: object
+    properties:
+      current:
+        description: Current firmware version
+        type: string
+      latest:
+        description: Latest known firmware version
+        type: string
+      semver:
+        type: object
+        properties:
+          major:
+            type: number
+          minor:
+            type: number
+          patch:
+            type: number
+          prerelease:
+            type: array
+            items:
+              type: string
+  DeviceUpgradeStatus:
+    type: object
+    properties:
+      status:
+        type: string
+      error:
+        type: string
+      changedAt:
+        type: number
+        description: unix timestamp in ms
+      expectedDuration:
+        type: number
+        description: duration in ms
+      firmware:
+        $ref: '#/definitions/Firmware'
+  FirmwareIdentification:
+    type: object
+    properties:
+      id:
+        description: Synthetic ID, combination of filename and origin
+        type: string
+      version:
+        type: string
+      filename:
+        description: Name of the firmware image file
+        type: string
+      origin:
+        description: Firmware origin
+        type: string
+        enum:
+          - ubnt
+          - manual
+          - unms
+      platformId:
+        description: Firmware platformId, e.g. e50, e100 ...
+        type: string
+      models:
+        description: Supported models
+        type: array
+        items:
+          type: string
+  FirmwareSemver:
+    type: object
+    properties:
+      major:
+        type: number
+      minor:
+        type: number
+      patch:
+        type: number
+      prerelease:
+        type: array
+        items:
+          type: string
+  Firmware:
+    type: object
+    properties:
+      identification:
+        $ref: '#/definitions/FirmwareIdentification'
+      semver:
+        $ref: '#/definitions/FirmwareSemver'
+      url:
+        description: Download url of the firmware image
+        type: string
+      size:
+        description: Size in bytes
+        type: integer
+      date:
+        description: Unix timestamp in miliseconds
+        type: number
+  Status:
+    type: object
+    properties:
+      result:
+        type: boolean
+      message:
+        type: string
+  Error:
+    type: object
+    properties:
+      error:
+        type: integer
+        format: int32
+      message:
+        type: string
+      statusCode:
+        type: string
+  Task:
+    type: object
+    properties:
+      id:
+        type: string
+      type:
+        type: string
+        enum:
+          - FW upgrade
+          - Mass FW upgrade
+      startTimestamp:
+        type: number
+      endTimestamp:
+        type: number
+      aggregatedTime:
+        type: number
+      status:
+        type: string
+        enum:
+          - success
+          - failed
+          - in-progress
+          - canceled
+      totalCount:
+        type: number
+      successCount:
+        type: number
+      taskItems:
+        type: array
+        items:
+          type: object
+  TwoFactorToken:
+    type: object
+    properties:
+      id:
+        type: string
+      userId:
+        type: string
+      sessionTimeout:
+        type: number
+      exp:
+        type: number
+        description: unix timestamp in milliseconds
+  TwoFactorSecret:
+    type: object
+    properties:
+      base32:
+        type: string
+        description: otp secret in base32 encoding
+      otpauth_url:
+        type: string
+        description: otp secret url for authenticator app
+  UnmsSettings:
+    type: object
+    properties:
+      overrideGlobal:
+        type: boolean
+        description: If true during update of unms global settings this device settings will not update if false yes
+      devicePingAddress:
+        type: string
+        description: Address for device to ping
+      devicePingIntervalNormal:
+        type: number
+        description: In miliseconds
+      devicePingIntervalOutage:
+        type: number
+        description: In miliseconds
+      deviceTransmissionProfile:
+        type: string
+        description: Transmission frequency with device
+        enum:
+          - low
+          - medium
+          - high
+  NmsSummary:
+    type: object
+    properties:
+      devicesUnauthorizedCount:
+        type: number
+        description: Number of unauthorized devices
+      logsUnreadCount:
+        type: number
+        description: Number of unread logs since latest logs view
+      outagesUnreadCount:
+        type: number
+        description: Number of unread outages since latest logs view

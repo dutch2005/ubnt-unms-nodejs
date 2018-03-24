@@ -1,0 +1,21 @@
+{
+  "env": {
+    "browser": false,
+    "jasmine": true,
+    "node": true
+  },
+  "parserOptions": {
+    "sourceType": "script",
+    "ecmaFeatures": {
+      "impliedStrict": false
+    }
+  },
+  "rules": {
+    "no-console": "off",
+    "no-restricted-syntax": "off",
+    "strict": [2, "global"]
+  },
+  "plugins": [
+    "jasmine"
+  ]
+}

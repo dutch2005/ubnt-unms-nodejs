@@ -1,0 +1,18 @@
+const config = require('./config');
+
+const connection = {
+  'username': config.pg.user,
+  'password': config.pg.password,
+  'database': config.pg.database,
+  'host': config.pg.host,
+  'port': config.pg.port,
+  'dialect': 'postgres',
+};
+
+module.exports = {
+  'migrations-path': './lib/dal/migrations',
+  'config': __filename,
+  'development': connection,
+  'test': connection,
+  'production': connection,
+};
