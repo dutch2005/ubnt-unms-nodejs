@@ -70,7 +70,7 @@
     "le-challenge-fs": "=2.0.5",
     "le-store-certbot": "=2.0.3",
     "le_node": "=1.7.1",
-    "lodash": "=4.17.4",
+    "lodash": "=4.17.19",
     "moment-timezone": "=0.5.6",
     "monad-t": "=0.2.3",
     "monet": "=0.9.0-alpha.2",
