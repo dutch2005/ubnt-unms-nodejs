@@ -100,7 +100,7 @@
     "request-promise-native": "=1.0.4",
     "rxjs": "=5.5.2",
     "semver": "=5.3.0",
-    "sequelize": "=3.29.0",
+    "sequelize": "=5.15.1",
     "sequelize-cli": "=2.7.0",
     "serialize-error": "=2.1.0",
     "servicebus": "=2.0.10",
